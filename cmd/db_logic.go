@@ -3,8 +3,11 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"sort"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/olekukonko/tablewriter"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -78,29 +81,6 @@ func showTableStructure(db *sql.DB, tableName string) error {
 
 		fmt.Printf("Field: %s, Type: %s, Null: %s, Key: %s, Default: %s, Extra: %s\n",
 			result.Field, result.Type, result.Null, result.Key, result.Default, result.Extra)
-	}
-
-	return nil
-}
-
-func runMathQuery(db *gorm.DB) error {
-	var results []struct {
-		AliasColumnName string `gorm:"column:alias_column_name"`
-		MathOperation   int    `gorm:"column:math_operation"`
-		BuiltInFunction string `gorm:"column:built_in_function"`
-	}
-
-	// Replace this query with your custom SQL query
-	query := "SELECT year_of_publication AS year, column1 + column2 AS math_operation, UPPER(column3) AS built_in_function FROM your_table_name"
-
-	if err := db.Raw(query).Scan(&results).Error; err != nil {
-		return err
-	}
-
-	fmt.Println("Results:")
-	for _, result := range results {
-		fmt.Printf("AliasColumnName: %s, MathOperation: %d, BuiltInFunction: %s\n",
-			result.AliasColumnName, result.MathOperation, result.BuiltInFunction)
 	}
 
 	return nil
@@ -184,11 +164,51 @@ func sortBooks(db *sql.DB) error {
 
 func changePublisher(db *sql.DB, bookLibraryCode, newPublisher string) error {
 	// Execute an UPDATE SQL statement to change the publisher
-	_, err := db.Exec("UPDATE bookcatalog SET publisher = ? WHERE book_library_code = ?", newPublisher, bookLibraryCode)
+	_, err := db.Exec("UPDATE bookcatalog SET publisher_id = ? WHERE book_library_code = ?", newPublisher, bookLibraryCode)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Publisher for book with Library Code %s changed to %s\n", bookLibraryCode, newPublisher)
+	return nil
+}
+
+func showTableValues(db *gorm.DB, tableName string) error {
+	// Retrieve all values from the specified table
+	var results []map[string]interface{}
+	if err := db.Table(tableName).Find(&results).Error; err != nil {
+		return err
+	}
+
+	fmt.Printf("Values of table %s:\n", tableName)
+
+	// Sort the column names for consistent order
+	var columns []string
+	for key := range results[0] {
+		columns = append(columns, key)
+	}
+	sort.Strings(columns)
+
+	// Create a new table
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(columns)
+
+	// Add rows to the table
+	for _, row := range results {
+		var values []string
+		for _, col := range columns {
+			values = append(values, fmt.Sprintf("%v", row[col]))
+		}
+		table.Append(values)
+	}
+
+	// Set table formatting options if needed
+	table.SetAutoFormatHeaders(false)
+	table.SetAutoWrapText(false)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	// Render the table
+	table.Render()
+
 	return nil
 }

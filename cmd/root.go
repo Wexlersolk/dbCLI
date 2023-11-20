@@ -88,30 +88,6 @@ var showStructureCmd = &cobra.Command{
 	},
 }
 
-var showSelectMath = &cobra.Command{
-	Use:   "show-math-select",
-	Short: "Show the structure of a specific table",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Usage: dbCLI show-math-select <table_name>")
-			os.Exit(1)
-		}
-
-		db, err := initDB()
-		if err != nil {
-			fmt.Println("Error initializing database:", err)
-			os.Exit(1)
-		}
-		defer db.Close()
-
-		err = runMathQuery(dbG)
-		if err != nil {
-			fmt.Println("Error showing results", err)
-			os.Exit(1)
-		}
-	},
-}
-
 var callHeadCountCMD = &cobra.Command{
 	Use:   "call-HeadCount",
 	Short: "Call the HeadCount function in the database",
@@ -163,21 +139,16 @@ var getBooksAfterYearCmd = &cobra.Command{
 	Short: "Get book names and years of publication where the year is higher than the provided year",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Parse the year argument
 		year, err := strconv.Atoi(args[0])
 		if err != nil {
 			fmt.Println("Invalid year argument. Please provide a valid number.")
 			return
 		}
-
-		// Call the function to get books after the specified year
 		books, err := getBooksAfterYear(year)
 		if err != nil {
 			fmt.Println("Error getting books after the specified year:", err)
 			return
 		}
-
-		// Display the results
 		fmt.Printf("Books published after %d:\n", year)
 		for _, book := range books {
 			fmt.Printf("Name: %s, Year of Publication: %d\n", book.Title, book.YearOfPublication)
@@ -186,7 +157,7 @@ var getBooksAfterYearCmd = &cobra.Command{
 }
 
 var showANDCmd = &cobra.Command{
-	Use:   "show-books",
+	Use:   "show-books-Mpages-Mprice",
 	Short: "Show books based on criteria",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
@@ -263,6 +234,32 @@ var changePublisherCmd = &cobra.Command{
 	},
 }
 
+var showValuesCmd = &cobra.Command{
+	Use:   "show-values",
+	Short: "Show the values of a specific table",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("Usage: dbCLI show-values <table_name>")
+			os.Exit(1)
+		}
+
+		tableName := args[0]
+
+		db, err := initDB()
+		if err != nil {
+			fmt.Println("Error initializing database:", err)
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		err = showTableValues(dbG, tableName)
+		if err != nil {
+			fmt.Println("Error showing table values:", err)
+			os.Exit(1)
+		}
+	},
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "dbCLI",
 	Short: "A brief description of your application",
@@ -290,5 +287,6 @@ func init() {
 	rootCmd.AddCommand(showANDCmd)
 	rootCmd.AddCommand(sortBooksCmd)
 	rootCmd.AddCommand(changePublisherCmd)
+	rootCmd.AddCommand(showValuesCmd)
 
 }
